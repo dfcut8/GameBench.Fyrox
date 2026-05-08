@@ -1,0 +1,13 @@
+{
+    "32fc7eb8-195d-430f-a1c0-b66946e59263": "assets/sprites/bench_blob_5.png",
+    "3accb5ed-6305-4daa-8dfa-3e4df281b731": "assets/sprites/bench_blob_0.png",
+    "40a190c1-f117-4202-b6f1-fce8936f3ee9": "assets/sprites/bench_blob_6.png",
+    "5b18e8a3-de03-4ffb-90ba-2a4eff5f8ca4": "assets/sprites/bench_blob_4.png",
+    "6d32f783-e9dd-4c9b-9597-e103acdf18ad": "assets/sprites/bench_blob_1.png",
+    "7915fc77-768b-4cb5-995c-6f3d8d874caf": "data/scene.rgs",
+    "98bd65a7-2cef-4e8d-b00d-dc9703f618cc": "assets/sprites/bench_blob_3.png",
+    "9c40f782-a153-4fe4-a678-cc7147594e74": "assets/sprites/bench_blob_7.png",
+    "9c8fa51e-5792-40bd-b5b9-ec6d4c45b4fe": "assets/audio/benchmark_loop.wav",
+    "d437a6b2-4508-4cab-a338-8c03ae28437b": "assets/tiles/benchmark_tilemap.png",
+    "e53ef9cb-c080-4476-94fb-ef6dad9b0703": "assets/sprites/bench_blob_2.png",
+}
