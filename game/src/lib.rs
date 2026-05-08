@@ -28,8 +28,8 @@ use fyrox::{
     scene::{
         base::BaseBuilder,
         camera::{CameraBuilder, OrthographicProjection, Projection},
+        dim2::rectangle::{Rectangle, RectangleBuilder},
         sound::{SoundBuffer, SoundBuilder, Status},
-        sprite::{Sprite, SpriteBuilder},
         transform::TransformBuilder,
         Scene,
     },
@@ -42,9 +42,9 @@ pub use fyrox;
 
 const WINDOW_WIDTH: f32 = 1280.0;
 const WINDOW_HEIGHT: f32 = 960.0;
-const WORLD_SIZE: f32 = 3200.0;
-const HALF_WORLD: f32 = WORLD_SIZE * 0.5;
-const OBJECT_SIZE: f32 = 32.0;
+const HALF_WORLD_WIDTH: f32 = WINDOW_WIDTH * 0.5;
+const HALF_WORLD_HEIGHT: f32 = WINDOW_HEIGHT * 0.5;
+const OBJECT_SIZE: f32 = 48.0;
 const HALF_OBJECT: f32 = OBJECT_SIZE * 0.5;
 const DEFAULT_TARGET: usize = 100;
 const MAX_TARGET: usize = 5000;
@@ -75,7 +75,7 @@ struct BenchmarkUi {
 
 #[derive(Debug, Clone)]
 struct BenchmarkObject {
-    node: Handle<Sprite>,
+    node: Handle<Rectangle>,
     position: Vector2<f32>,
     velocity: Vector2<f32>,
     animation_time: f32,
@@ -126,7 +126,7 @@ pub struct Game {
 
 impl Game {
     fn make_material(path: &str, context: &PluginContext) -> MaterialResource {
-        let mut material = Material::standard_sprite();
+        let mut material = Material::standard_2d();
         material.bind("diffuseTexture", context.resource_manager.request::<Texture>(path));
         MaterialResource::new_ok(Uuid::new_v4(), Default::default(), material)
     }
@@ -137,14 +137,14 @@ impl Game {
         CameraBuilder::new(
             BaseBuilder::new().with_local_transform(
                 TransformBuilder::new()
-                    .with_local_position(Vector3::new(0.0, 0.0, 10.0))
+                    .with_local_position(Vector3::new(0.0, 0.0, -10.0))
                     .build(),
             ),
         )
         .with_projection(Projection::Orthographic(OrthographicProjection {
-            z_near: 0.0,
+            z_near: 0.01,
             z_far: 100.0,
-            vertical_size: WORLD_SIZE * 0.5,
+            vertical_size: HALF_WORLD_HEIGHT,
         }))
         .build(&mut scene.graph);
 
@@ -157,17 +157,17 @@ impl Game {
             .collect();
 
         if let Some(material) = self.background_material.clone() {
-            SpriteBuilder::new(
+            RectangleBuilder::new(
                 BaseBuilder::new()
                     .with_name("Benchmark Tilemap")
                     .with_local_transform(
                         TransformBuilder::new()
-                            .with_local_position(Vector3::new(0.0, 0.0, -1.0))
+                            .with_local_position(Vector3::new(0.0, 0.0, 5.0))
+                            .with_local_scale(Vector3::new(WINDOW_WIDTH, WINDOW_WIDTH, 1.0))
                             .build(),
                     ),
             )
             .with_material(material)
-            .with_size(HALF_WORLD)
             .build(&mut scene.graph);
             Log::info("Tilemap created from assets/tiles/benchmark_tilemap.png");
         }
@@ -186,7 +186,7 @@ impl Game {
         Log::info("Background music started from assets/audio/benchmark_loop.wav");
 
         self.scene = context.scenes.add(scene);
-        Log::info("Camera setup complete for 3200x3200 benchmark world");
+        Log::info("Camera setup complete for 1280x960 benchmark world");
     }
 
     fn show_menu(&mut self, context: &mut PluginContext) {
@@ -356,8 +356,8 @@ impl Game {
 
     fn spawn_object(&mut self, context: &mut PluginContext) {
         let rng = self.rng.get_or_insert_with(rand::thread_rng);
-        let x = rng.gen_range((-HALF_WORLD + OBJECT_SIZE)..(HALF_WORLD - OBJECT_SIZE));
-        let y = rng.gen_range((-HALF_WORLD + OBJECT_SIZE)..(HALF_WORLD - OBJECT_SIZE));
+        let x = rng.gen_range((-HALF_WORLD_WIDTH + OBJECT_SIZE)..(HALF_WORLD_WIDTH - OBJECT_SIZE));
+        let y = rng.gen_range((-HALF_WORLD_HEIGHT + OBJECT_SIZE)..(HALF_WORLD_HEIGHT - OBJECT_SIZE));
         let mut vx: f32 = rng.gen_range(-140.0..140.0);
         let mut vy: f32 = rng.gen_range(-140.0..140.0);
         if vx.abs() + vy.abs() < 80.0 {
@@ -366,17 +366,17 @@ impl Game {
         }
 
         let frame = rng.gen_range(0..self.sprite_materials.len());
-        let node = SpriteBuilder::new(
+        let node = RectangleBuilder::new(
             BaseBuilder::new()
                 .with_name("Bench Blob")
                 .with_local_transform(
                     TransformBuilder::new()
                         .with_local_position(Vector3::new(x.round(), y.round(), 0.0))
+                        .with_local_scale(Vector3::new(OBJECT_SIZE, OBJECT_SIZE, 1.0))
                         .build(),
                 ),
         )
         .with_material(self.sprite_materials[frame].clone())
-        .with_size(HALF_OBJECT)
         .build(&mut context.scenes[self.scene].graph);
 
         self.objects.push(BenchmarkObject {
@@ -415,20 +415,22 @@ impl Game {
         for object in &mut self.objects {
             object.position += object.velocity * dt;
 
-            let min = -HALF_WORLD + HALF_OBJECT;
-            let max = HALF_WORLD - HALF_OBJECT;
-            if object.position.x < min {
-                object.position.x = min;
+            let min_x = -HALF_WORLD_WIDTH + HALF_OBJECT;
+            let max_x = HALF_WORLD_WIDTH - HALF_OBJECT;
+            let min_y = -HALF_WORLD_HEIGHT + HALF_OBJECT;
+            let max_y = HALF_WORLD_HEIGHT - HALF_OBJECT;
+            if object.position.x < min_x {
+                object.position.x = min_x;
                 object.velocity.x = object.velocity.x.abs();
-            } else if object.position.x > max {
-                object.position.x = max;
+            } else if object.position.x > max_x {
+                object.position.x = max_x;
                 object.velocity.x = -object.velocity.x.abs();
             }
-            if object.position.y < min {
-                object.position.y = min;
+            if object.position.y < min_y {
+                object.position.y = min_y;
                 object.velocity.y = object.velocity.y.abs();
-            } else if object.position.y > max {
-                object.position.y = max;
+            } else if object.position.y > max_y {
+                object.position.y = max_y;
                 object.velocity.y = -object.velocity.y.abs();
             }
 
@@ -468,8 +470,8 @@ impl Game {
 
     fn cell_for(position: Vector2<f32>) -> (i32, i32) {
         (
-            ((position.x + HALF_WORLD) / OBJECT_SIZE).floor() as i32,
-            ((position.y + HALF_WORLD) / OBJECT_SIZE).floor() as i32,
+            ((position.x + HALF_WORLD_WIDTH) / OBJECT_SIZE).floor() as i32,
+            ((position.y + HALF_WORLD_HEIGHT) / OBJECT_SIZE).floor() as i32,
         )
     }
 
